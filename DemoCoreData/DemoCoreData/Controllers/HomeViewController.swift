@@ -11,7 +11,7 @@ import CoreData
 class HomeViewController: UIViewController {
     
     @IBOutlet weak var tableView: UITableView!
-    
+    let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     var fetchedResultsController: NSFetchedResultsController<User>!
     
     override func viewDidLoad() {
@@ -29,11 +29,11 @@ class HomeViewController: UIViewController {
         let nib = UINib(nibName: "HomeCell", bundle: .main)
         tableView.register(nib, forCellReuseIdentifier: "cell")
         
-        //add
+        // add
         let addNewBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNew))
         self.navigationItem.rightBarButtonItem = addNewBarButtonItem
         
-        //delete
+        // delete
         let deleteBarButtonItem = UIBarButtonItem(barButtonSystemItem: .trash, target: self, action: #selector(deleleAll))
         self.navigationItem.leftBarButtonItem = deleteBarButtonItem
     }
@@ -54,42 +54,17 @@ class HomeViewController: UIViewController {
                                        preferredStyle: .alert)
          
         let saveAction = UIAlertAction(title: "OK", style: .default) { (alert) in
-            print("DELETE ALL")
-            
-            /*
-            --- lấy AppDelegate
-            guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-            --- lấy Managed Object Context
-            let managedContext = appDelegate.persistentContainer.viewContext
-            */
-            
-            let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-            
-            // Create Fetch Request
             let deleteFetch = NSFetchRequest<NSFetchRequestResult>(entityName: "User")
-            
-            // Initialize Batch Delete Request
             let deleteRequest = NSBatchDeleteRequest(fetchRequest: deleteFetch)
-            
             do {
-                // execute delete
-                try managedContext.execute(deleteRequest)
-                
-                // save
-                try managedContext.save()
-                
-                // Perform Fetch
+                try self.managedContext.execute(deleteRequest)
+                try self.managedContext.save()
                 try self.fetchedResultsController.performFetch()
-                
-                // Reload Table View
                 self.tableView.reloadData()
-                
             } catch let error as NSError {
                 print("Could not save. \(error), \(error.userInfo)")
             }
-            
         }
-         
          let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
          alert.addAction(saveAction)
          alert.addAction(cancelAction)
@@ -97,28 +72,12 @@ class HomeViewController: UIViewController {
     }
     
     func save(name: String, age: Int, gender: Bool) {
-        /*
-        --- lấy AppDelegate
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        --- lấy Managed Object Context
-        let managedContext = appDelegate.persistentContainer.viewContext
-        */
-        
-        let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        
-        //Tạo Entity Name
         let entity = NSEntityDescription.entity(forEntityName: "User", in: managedContext)!
-        
-        //New Object và insert vào Managed Object Context
         let user = NSManagedObject(entity: entity, insertInto: managedContext)
-        
-        //Gán giá trị cho các thuộc tính của object
         user.setValue(name, forKeyPath: "name")
         user.setValue(age, forKeyPath: "age")
         user.setValue(gender, forKeyPath: "gender")
-        
         do {
-            //lưu lại
             try managedContext.save()
         } catch let error as NSError {
             print("Could not save. \(error), \(error.userInfo)")
@@ -138,13 +97,10 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! HomeCell
-        
         let user = fetchedResultsController.object(at: indexPath)
-        
         cell.nameLabel.text = user.name
         cell.ageLabel.text = "\(user.age) years old"
         cell.genderLabel.text = user.gender ? "Male" : "Female"
-        
         return cell
     }
     
@@ -157,23 +113,8 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
-            
-            /*
-            --- lấy AppDelegate
-            guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-            --- lấy Managed Object Context
-            let managedContext = appDelegate.persistentContainer.viewContext
-            */
-            
-            let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-            
-            // lấy item
             let user = fetchedResultsController.object(at: indexPath)
-            
-            // delete item
             managedContext.delete(user)
-            
-            //save context
             do {
                 try managedContext.save()
             } catch let error as NSError {
@@ -187,29 +128,14 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
 //Adding Sections
 extension HomeViewController: NSFetchedResultsControllerDelegate {
     func initializeFetchedResultsController() {
-        
-        // Create Fetch Request
         let fetchRequest: NSFetchRequest<User> = User.fetchRequest()
-        
-        // Predicate
         //fetchRequest.predicate = NSPredicate(format: "gender == true")
-
-        // Configure Fetch Request
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
-        
-        // het AppDelegate
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        
-        // lấy Managed Object Context
-        let managedContext = appDelegate.persistentContainer.viewContext
-        
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
                                                               managedObjectContext: managedContext,
                                                               sectionNameKeyPath: nil,
                                                               cacheName: nil)
-
         fetchedResultsController.delegate = self
-        
         do {
             try fetchedResultsController.performFetch()
         } catch {
@@ -221,19 +147,16 @@ extension HomeViewController: NSFetchedResultsControllerDelegate {
     func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
         switch (type) {
         case .insert:
-            print("insert")
             if let indexPath = newIndexPath {
                 tableView.insertRows(at: [indexPath], with: .fade)
             }
             break;
         case .delete:
-            print("delete")
             if let indexPath = indexPath {
                 tableView.deleteRows(at: [indexPath], with: .fade)
             }
             break;
         case .update:
-            print("update")
             tableView.reloadRows(at: [indexPath!], with: .automatic)
             break;
         default:

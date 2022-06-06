@@ -21,7 +21,6 @@ class EditViewController: UIViewController {
         setupData()
     }
     
-    //
     func setupUI() {
         title = "Edit"
         
@@ -38,21 +37,12 @@ class EditViewController: UIViewController {
     }
 
     @objc func done() {
-        /*
-        --- lấy AppDelegate
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        --- lấy Managed Object Context
-        let managedContext = appDelegate.persistentContainer.viewContext
-        */
-        
         let managedContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-        
-        // set giá trị cho Object
+
         user.name = nameTextField.text
         user.age = Int16(ageTextField.text!) ?? 0
         user.gender = genderSegmentedControl.selectedSegmentIndex == 0 ? true : false
         
-        //save context
         do {
             try managedContext.save()
             self.navigationController?.popViewController(animated: true)
